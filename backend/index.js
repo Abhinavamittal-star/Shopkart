@@ -16,6 +16,7 @@ const orderRoutes = require("./routes/order.routes.js");
 const seedData = require("./seedProducts.js");
 
 const app = express();
+const frontendDistPath = path.join(__dirname, "../frontend/frontend/dist");
 
 // Middleware
 const allowedOrigins = (process.env.CLIENT_URL || "")
@@ -44,11 +45,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Routes
-app.use("/customers", customerRoutes);
-app.use("/products", productRoutes);
-app.use("/wishlist", wishlistRoutes);
-app.use("/cart", cartRoutes);
-app.use("/orders", orderRoutes);
+app.use("/api/customers", customerRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/wishlist", wishlistRoutes);
+app.use("/api/cart", cartRoutes);
+app.use("/api/orders", orderRoutes);
 
 // Health check endpoint
 app.get("/", (req, res) => {
@@ -59,7 +60,19 @@ app.get("/", (req, res) => {
   });
 });
 
-// 404 Route handler
+// Keep unknown API requests as JSON responses rather than serving the frontend.
+app.use("/api", (req, res) => {
+  res.status(404).json({ success: false, message: "Route not found" });
+});
+
+// Serve the built React app from the same origin as the API.
+app.use(express.static(frontendDistPath));
+app.get("*", (req, res, next) => {
+  res.sendFile(path.join(frontendDistPath, "index.html"), (error) => {
+    if (error) next(error);
+  });
+});
+
 app.use((req, res) => {
   res.status(404).json({ success: false, message: "Route not found" });
 });

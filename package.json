@@ -1,0 +1,11 @@
+{
+  "name": "shopkart",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "npm ci --prefix backend && npm ci --prefix frontend/frontend && npm run build --prefix frontend/frontend",
+    "start": "npm --prefix backend start"
+  }
+}

@@ -12,7 +12,7 @@ ShopKart is a full-stack shopping application built with React, Express, and Mon
 | Authentication | JWT in an HttpOnly cookie; bcryptjs password hashing |
 | Payment | Razorpay Test Mode in deployment; randomized mock gateway for local development |
 | HTTP client | Axios with cookie credentials |
-| Hosting configuration | Render Blueprint for the API; Vercel for the frontend |
+| Hosting configuration | Railway single service for the API and frontend; optional Render/Vercel configuration |
 
 ## Features
 
@@ -158,33 +158,21 @@ Login
 
 For local development, the mock gateway uses a cryptographically random, one-use payment token whose hash is stored with the pending order. The API randomly returns success or failure and does not accept a client-supplied outcome. Mock payments are blocked when `NODE_ENV=production`.
 
-## Production deployment
+## Production deployment on Railway (single web service)
 
-The repository includes a Render Blueprint at `render.yaml` and Vercel settings in `frontend/frontend/vercel.json`. The frontend's Vercel rewrites proxy API calls through the Vercel origin to avoid cross-site login-cookie restrictions.
+Railway can run the React frontend and Express API together in one public web service. The root [`railway.json`](./railway.json) and [`package.json`](./package.json) configure the build and start commands: the build installs both apps' dependencies and builds the Vite frontend, then the backend serves the generated frontend files alongside the API. The API is under `/api`, keeping it separate from client-side routes such as `/orders`.
 
-### 1. Push the repository
-
-The Render service name in the configuration is `shopkart-api`, and the Vercel API rewrites target `https://shopkart-api.onrender.com`. If Render assigns a different hostname, update those destinations in `frontend/frontend/vercel.json` before deploying the frontend.
-
-### 2. Deploy the backend on Render
-
-1. In Render, create a **Blueprint** and select this GitHub repository.
-2. Render reads `render.yaml`; the API root directory is `backend`.
-3. Set the prompted environment values in Render's dashboard:
-   - `MONGO_URI`: a production MongoDB Atlas connection string. Add Render's outbound access as required by the Atlas network settings.
-   - `JWT_SECRET`: a fresh, long, random secret (not the development value).
-   - `CLIENT_URL`: the exact deployed Vercel origin, such as `https://shopkart.vercel.app` (no trailing slash).
-   - `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET`: server-side Razorpay credentials. Use Test Mode credentials for a test deployment; the API intentionally blocks mock payments in production.
-4. Wait for the Render health check at `/` to pass. The service uses `npm ci` and `npm start`.
-
-### 3. Deploy the frontend on Vercel
-
-1. Import the same GitHub repository into Vercel.
-2. Set the Vercel **Root Directory** to `frontend/frontend`.
-3. Set build command `npm run build` and output directory `dist`.
-4. Set the Vercel build environment variable `VITE_API_URL` to `/api`.
-5. Deploy. The included `vercel.json` rewrites `/api/*` requests to Render and other frontend routes to `index.html`, so product-detail routes do not collide with API routes.
-6. Copy the final Vercel production origin into Render's `CLIENT_URL` environment value, then redeploy/restart the API.
+1. Push the repository to GitHub and create a Railway project from that repository. Keep the service root directory at the repository root.
+2. Railway uses `railway.json` to build (`npm run build`) and start (`npm start`) the single service. Generate a public domain from the service's Networking settings.
+3. Provide a MongoDB connection string in `MONGO_URI`. This can be MongoDB Atlas or a separate persistent MongoDB service; the web app and API themselves are deployed together in the Railway service.
+4. Add these Railway service variables:
+   - `NODE_ENV=production`
+   - `PAYMENT_GATEWAY=razorpay`
+   - `MONGO_URI`: production MongoDB connection string
+   - `JWT_SECRET`: a fresh, long, random secret (not the development value)
+   - `CLIENT_URL`: the Railway public origin, for example `https://shopkart-production.up.railway.app` (no trailing slash)
+   - `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET`: server-side Razorpay **Test Mode** credentials
+5. Wait for Railway's `/` health check to pass, then open the generated domain. No Vercel project or `VITE_API_URL` setting is required: the production frontend calls `/api` on the same origin.
 
 ### Production payment note
 
@@ -194,26 +182,24 @@ Production is configured for Razorpay, not the development mock. Checkout requir
 
 | Variable | Used by | Description |
 | --- | --- | --- |
-| `PORT` | Backend | HTTP port; Render provides this automatically |
+| `PORT` | Backend | HTTP port; Railway provides this automatically |
 | `MONGO_URI` | Backend | MongoDB connection URI |
 | `JWT_SECRET` | Backend | Secret used to sign customer session tokens |
-| `CLIENT_URL` | Backend | Allowed browser origin; production value is the Vercel site origin |
-| `NODE_ENV` | Backend | Set to `development` locally and `production` on Render |
+| `CLIENT_URL` | Backend | Allowed browser origin; production value is the Railway public origin |
+| `NODE_ENV` | Backend | Set to `development` locally and `production` on Railway |
 | `PAYMENT_GATEWAY` | Backend | `mock` locally or `razorpay` for a deployed service |
 | `RAZORPAY_KEY_ID` | Backend | Razorpay Test Mode public key ID |
 | `RAZORPAY_KEY_SECRET` | Backend | Razorpay Test Mode secret; server-side only |
-| `VITE_API_URL` | Frontend build | Leave unset locally; set to `/api` on Vercel to use the same-origin API proxy |
+| `VITE_API_URL` | Frontend build | Optional API base URL override; defaults to the local API in development and `/api` in production |
 
 `backend/.env` is a local-only file and is excluded by `.gitignore`. The checked-in `backend/.env.example` contains placeholders only.
 
 ## Build and validation
 
 ```powershell
-Set-Location .\frontend\frontend
 npm run build
 
-Set-Location ..\..\backend
-node --check index.js
+node --check .\backend\index.js
 ```
 
 ## Security notes
