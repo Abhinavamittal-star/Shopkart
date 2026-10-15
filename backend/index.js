@@ -52,9 +52,9 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 
 // Health check endpoint
-app.get("/", (req, res) => {
+app.get("/health", (req, res) => {
   res.json({
-    message: "Welcome to ShopKart Customer & Product Catalog API Service",
+    message: "ShopKart API is healthy",
     status: "Active",
     timestamp: new Date()
   });

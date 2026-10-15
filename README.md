@@ -172,7 +172,7 @@ Railway can run the React frontend and Express API together in one public web se
    - `JWT_SECRET`: a fresh, long, random secret (not the development value)
    - `CLIENT_URL`: the Railway public origin, for example `https://shopkart-production.up.railway.app` (no trailing slash)
    - `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET`: server-side Razorpay **Test Mode** credentials
-5. Wait for Railway's `/` health check to pass, then open the generated domain. No Vercel project or `VITE_API_URL` setting is required: the production frontend calls `/api` on the same origin.
+5. Wait for Railway's `/health` check to pass, then open the generated domain to load the storefront. No Vercel project or `VITE_API_URL` setting is required: the production frontend calls `/api` on the same origin.
 
 ### Production payment note
 
