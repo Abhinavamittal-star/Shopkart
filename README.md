@@ -190,7 +190,7 @@ Production is configured for Razorpay, not the development mock. Checkout requir
 | `PAYMENT_GATEWAY` | Backend | `mock` locally or `razorpay` for a deployed service |
 | `RAZORPAY_KEY_ID` | Backend | Razorpay Test Mode public key ID |
 | `RAZORPAY_KEY_SECRET` | Backend | Razorpay Test Mode secret; server-side only |
-| `VITE_API_URL` | Frontend build | Optional API base URL override; defaults to the local API in development and `/api` in production |
+| `VITE_API_URL` | Frontend build | Optional development API override; production always uses the same-origin `/api` path |
 
 `backend/.env` is a local-only file and is excluded by `.gitignore`. The checked-in `backend/.env.example` contains placeholders only.
 
